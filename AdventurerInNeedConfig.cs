@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Text;
-using Dalamud.Logging;
+using Dalamud.Utility;
 
 namespace AdventurerInNeed {
     public class RouletteConfig {
@@ -13,13 +13,14 @@ namespace AdventurerInNeed {
         public bool Tank;
         public bool Healer;
         public bool DPS;
+        public bool OnlyIncomplete;
     }
 
     public class AdventurerInNeedConfig : IPluginConfiguration {
         [NonSerialized]
         private AdventurerInNeed plugin;
 
-        public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new Dictionary<uint, RouletteConfig>();
+        public Dictionary<uint, RouletteConfig> Roulettes { get; set; } = new();
 
 #if DEBUG
         public bool AlwaysShowAlert { get; set; }
@@ -44,8 +45,8 @@ namespace AdventurerInNeed {
 
             var modified = false;
 
-            ImGui.SetNextWindowSize(new Vector2(360 * scale, 350), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(360 * scale, 350), new Vector2(560 * scale, 650));
+            ImGui.SetNextWindowSize(new Vector2(420 * scale, 350), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSizeConstraints(new Vector2(420 * scale, 350), new Vector2(640 * scale, 650));
             ImGui.Begin($"{plugin.Name} Config", ref drawConfig, ImGuiWindowFlags.NoCollapse);
 
 #if DEBUG
@@ -63,7 +64,7 @@ namespace AdventurerInNeed {
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.Healer);
                             plugin.ShowAlert(r, Roulettes[r.RowId], PreferredRole.DPS);
                         } catch (Exception ex) {
-                            PluginLog.LogError(ex.ToString());
+                            AdventurerInNeed.PluginLog.Error(ex.ToString());
                         }
                     }
                 }
@@ -99,14 +100,16 @@ namespace AdventurerInNeed {
             }
 
             ImGui.Separator();
-            ImGui.Columns(6, "###cols", false);
-            ImGui.SetColumnWidth(0, 40f * scale);
-            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 240f * scale);
+            ImGui.Columns(7, "###cols", false);
+            ImGui.SetColumnWidth(0, 60f * scale);
+            ImGui.SetColumnWidth(1, ImGui.GetWindowWidth() - 340f * scale);
             ImGui.SetColumnWidth(2, 40f * scale);
             ImGui.SetColumnWidth(3, 40f * scale);
             ImGui.SetColumnWidth(4, 40f * scale);
             ImGui.SetColumnWidth(5, 80f * scale);
+            ImGui.SetColumnWidth(6, 80f * scale);
 
+            ImGui.Text("Alerts");
             ImGui.NextColumn();
             ImGui.Text("Roulette");
             ImGui.NextColumn();
@@ -116,18 +119,38 @@ namespace AdventurerInNeed {
             ImGui.NextColumn();
             ImGui.Text("D");
             ImGui.NextColumn();
+            ImGui.Text("Complete");
+            ImGui.NextColumn();
             ImGui.Text("Current");
             ImGui.NextColumn();
 
+            ImGui.Separator();
             ImGui.Separator();
 
             if (plugin.RouletteList != null) {
                 foreach (var r in plugin.RouletteList.Where(r => r != null && r.ContentRouletteRoleBonus != null && r.ContentRouletteRoleBonus.Row > 0)) {
                     var rCfg = Roulettes.ContainsKey(r.RowId) ? Roulettes[r.RowId] : new RouletteConfig();
+                    
+                    var name = r.Name.ToDalamudString().TextValue
+                        .Replace("Duty Roulette: ", "")
+                        .Replace("DZufallsinhalt: ", "")
+                        .Replace("Mission aléatoire : ", "")
+                        .Replace("コンテンツルーレット：", "");
+                    
                     modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Enable alerts for '{name}'.");
+                    }
+                    
+                    ImGui.SameLine();
+                    modified = ImGui.Checkbox($"###rouletteIncompleteOnly{r.RowId}", ref rCfg.OnlyIncomplete) || modified;
+                    if (ImGui.IsItemHovered()) {
+                        ImGui.SetTooltip($"Only show alerts if roulette has not been completed today.");
+                    }
+
                     ImGui.NextColumn();
 
-                    ImGui.Text(r.Name);
+                    ImGui.Text(name);
                     ImGui.NextColumn();
                     modified = ImGui.Checkbox($"###rouletteTankEnabled{r.RowId}", ref rCfg.Tank) || modified;
                     ImGui.NextColumn();
@@ -136,6 +159,9 @@ namespace AdventurerInNeed {
                     modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
                     ImGui.NextColumn();
 
+                    ImGui.Text(plugin.IsRouletteComplete(r) ? "Yes" : "No");
+                    ImGui.NextColumn();
+                    
                     if (plugin.LastPreferredRoleList != null) {
                         var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
                         ImGui.Text(currentRole.ToString());
@@ -144,6 +170,7 @@ namespace AdventurerInNeed {
                     ImGui.NextColumn();
 
                     Roulettes[r.RowId] = rCfg;
+                    ImGui.Separator();
                 }
             }
             
