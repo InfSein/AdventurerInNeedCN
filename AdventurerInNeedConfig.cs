@@ -47,7 +47,7 @@ namespace AdventurerInNeed {
 
             ImGui.SetNextWindowSize(new Vector2(420 * scale, 350), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSizeConstraints(new Vector2(420 * scale, 350), new Vector2(640 * scale, 650));
-            ImGui.Begin($"{plugin.Name} Config", ref drawConfig, ImGuiWindowFlags.NoCollapse);
+            ImGui.Begin($"{plugin.Name} 设置", ref drawConfig, ImGuiWindowFlags.NoCollapse);
 
 #if DEBUG
             var alwaysShowAlert = AlwaysShowAlert;
@@ -72,7 +72,7 @@ namespace AdventurerInNeed {
 #endif
 
             var inGameAlerts = InGameAlert;
-            if (ImGui.Checkbox("Send alerts in game chat.", ref inGameAlerts)) {
+            if (ImGui.Checkbox("在聊天框中发送提醒 ", ref inGameAlerts)) {
                 InGameAlert = inGameAlerts;
                 Save();
             }
@@ -109,9 +109,9 @@ namespace AdventurerInNeed {
             ImGui.SetColumnWidth(5, 80f * scale);
             ImGui.SetColumnWidth(6, 80f * scale);
 
-            ImGui.Text("Alerts");
+            ImGui.Text("提醒");
             ImGui.NextColumn();
-            ImGui.Text("Roulette");
+            ImGui.Text("随机任务");
             ImGui.NextColumn();
             ImGui.Text("T");
             ImGui.NextColumn();
@@ -119,9 +119,9 @@ namespace AdventurerInNeed {
             ImGui.NextColumn();
             ImGui.Text("D");
             ImGui.NextColumn();
-            ImGui.Text("Complete");
+            ImGui.Text("已完成");
             ImGui.NextColumn();
-            ImGui.Text("Current");
+            ImGui.Text("目前");
             ImGui.NextColumn();
 
             ImGui.Separator();
@@ -139,13 +139,13 @@ namespace AdventurerInNeed {
                     
                     modified = ImGui.Checkbox($"###rouletteEnabled{r.RowId}", ref rCfg.Enabled) || modified;
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip($"Enable alerts for '{name}'.");
+                        ImGui.SetTooltip($"启用 '{name}' 的提醒。");
                     }
                     
                     ImGui.SameLine();
                     modified = ImGui.Checkbox($"###rouletteIncompleteOnly{r.RowId}", ref rCfg.OnlyIncomplete) || modified;
                     if (ImGui.IsItemHovered()) {
-                        ImGui.SetTooltip($"Only show alerts if roulette has not been completed today.");
+                        ImGui.SetTooltip($"仅在该随机任务的每日奖励还未获取时提醒。");
                     }
 
                     ImGui.NextColumn();
@@ -159,12 +159,19 @@ namespace AdventurerInNeed {
                     modified = ImGui.Checkbox($"###rouletteDPSEnabled{r.RowId}", ref rCfg.DPS) || modified;
                     ImGui.NextColumn();
 
-                    ImGui.Text(plugin.IsRouletteComplete(r) ? "Yes" : "No");
+                    ImGui.Text(plugin.IsRouletteComplete(r) ? "是" : "否");
                     ImGui.NextColumn();
                     
                     if (plugin.LastPreferredRoleList != null) {
                         var currentRole = plugin.LastPreferredRoleList.Get(r.ContentRouletteRoleBonus.Row);
-                        ImGui.Text(currentRole.ToString());
+                        var roleName = currentRole switch
+                        {
+                            PreferredRole.Tank => "防护职业(T)",
+                            PreferredRole.Healer => "治疗职业(H)",
+                            PreferredRole.DPS => "进攻职业(D)",
+                            _ => "???"
+                        };
+                        ImGui.Text(roleName);
                     }
 
                     ImGui.NextColumn();

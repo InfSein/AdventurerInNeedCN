@@ -141,16 +141,23 @@ namespace AdventurerInNeed {
                     _ => BitmapFontIcon.Warning
                 };
 
+                var roleName = role switch {
+                    PreferredRole.Tank => "防护职业",
+                    PreferredRole.Healer => "治疗职业",
+                    PreferredRole.DPS => "进攻职业",
+                    _ => "???"
+                };
+
                 var payloads = new Payload[] {
                     new UIForegroundPayload(500),
                     new TextPayload(roulette.Name),
                     new UIForegroundPayload(0),
-                    new TextPayload(" needs a "),
+                    new TextPayload(" 正需要一位 "),
                     new IconPayload(icon),
                     new UIForegroundPayload(roleForegroundColor),
-                    new TextPayload(role.ToString()),
+                    new TextPayload(roleName),
                     new UIForegroundPayload(0),
-                    new TextPayload("."),
+                    new TextPayload("。"),
                 };
 
                 var seString = new SeString(payloads);
@@ -170,7 +177,7 @@ namespace AdventurerInNeed {
 
         public void SetupCommands() {
             CommandManager.AddHandler("/pbonus", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {
-                HelpMessage = $"Open config window for {this.Name}",
+                HelpMessage = $"打开 {this.Name} 的设置窗口。",
                 ShowInHelp = true
             });
         }
